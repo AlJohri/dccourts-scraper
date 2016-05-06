@@ -1,0 +1,1 @@
+permutation ('a', 'g', 'u') is too broad. > 500 results

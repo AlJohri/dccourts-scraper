@@ -7,7 +7,12 @@ from dccourts_scraper import DCCourtsScraper, ScraperException
 alphabet = list(string.ascii_lowercase)
 scraper = DCCourtsScraper()
 
-for fname, lname1, lname2 in itertools.permutations(alphabet, 3):
+# allow restarting scraper from specific permutation
+last_permutation = None # ('a', 'g', 'u')
+permutations = list(itertools.permutations(alphabet, 3))
+last_index = permutations.index(last_permutation) if last_permutation else 0
+
+for fname, lname1, lname2 in permutations[last_index:]:
 
     print("Scraping", fname, lname1, lname2)
 
@@ -28,9 +33,9 @@ for fname, lname1, lname2 in itertools.permutations(alphabet, 3):
 
     print('------------------------------')
 
-    # initialize case details page
-    scraper.start_details()
+    # # initialize case details page
+    # scraper.start_details()
 
-    # iterate through case details for given search query
-    for i, item in enumerate(scraper.get_detail_data()):
-        print(i, item)
+    # # iterate through case details for given search query
+    # for i, item in enumerate(scraper.get_detail_data()):
+    #     print(i, item)

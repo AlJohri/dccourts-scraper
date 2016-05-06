@@ -1,7 +1,10 @@
 from __future__ import print_function
 from __future__ import division
 
-import requests, lxml.html, re, math
+import requests, lxml.html, re, math, logging
+
+from blessings import Terminal
+t = Terminal()
 
 class DCCourtsScraper(object):
     """
@@ -118,7 +121,17 @@ class DCCourtsScraper(object):
 
     def _get_num_results(self):
         text2parse = self.doc.cssselect("input[name=appData\:resultsform\:resultsPanelCollapsedState]")[0].getnext().text
-        num_text = re.search(r"Search retrieved (\d+)", text2parse).groups()[0]
+
+        match1 = re.search(r"Search retrieved (\d+)", text2parse)
+        if match1:
+            num_text = match1.groups()[0]
+        else:
+            match2 = re.search(r"Search limited to (\d+)", text2parse)
+            if match2:
+                num_text = match2.groups()[0]
+                logging.warning(t.red("search query %s is too broad, limitted to %s search results" % (str(self.search_query), num_text)))
+            else:
+                raise ScraperException("cannot find number of results for query %s" % (str(self.search_query)))
         return int(num_text)
 
     def _get_rows(self):
