@@ -8,7 +8,7 @@ alphabet = list(string.ascii_lowercase)
 scraper = DCCourtsScraper()
 
 # allow restarting scraper from specific permutation
-last_permutation = None # ('a', 'g', 'u')
+last_permutation = None # ('b', 'j', 'x') <- last tested permutation so far
 permutations = list(itertools.permutations(alphabet, 3))
 last_index = permutations.index(last_permutation) if last_permutation else 0
 

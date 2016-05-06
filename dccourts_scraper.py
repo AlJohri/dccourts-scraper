@@ -3,8 +3,14 @@ from __future__ import division
 
 import requests, lxml.html, re, math, logging
 
+from data import case_codes, party_codes, status_codes
+
 from blessings import Terminal
 t = Terminal()
+
+valid_case_codes = list(case_codes.keys())
+valid_party_codes = list(party_codes.keys())
+valid_status_codes = list(status_codes.keys())
 
 class DCCourtsScraper(object):
     """
@@ -57,14 +63,23 @@ class DCCourtsScraper(object):
     # Search
     # --------------------------------------------------------------------------------------- #
 
-    def start_search(self, first_name, last_name, company_name=""):
+    def start_search(self, first_name, last_name, company_name="", case_code="", party_code="", status_code="", from_date="", to_date=""):
         if len(first_name) < 1: raise Exception()
         if len(last_name) < 2: raise Exception()
+
+        if case_code and case_code not in valid_case_codes: raise ValueError("case code %s invalid" % case_code)
+        if party_code and party_code not in valid_party_codes: raise ValueError("party code %s invalid" % party_code)
+        if status_code and status_code not in valid_status_codes: raise ValueError("status code %s invalid" % status_code)
 
         self.search_query = {
             "first_name": first_name,
             "last_name": last_name,
-            "company_name": company_name
+            "company_name": company_name,
+            "case_code": case_code,
+            "party_code": party_code,
+            "status_code": status_code,
+            "from_date": from_date,
+            "to_date": to_date,
         }
 
         payload = self._get_search_payload()
@@ -108,6 +123,11 @@ class DCCourtsScraper(object):
             "appData:searchform:jspsearchpage:firstName": self.search_query['first_name'],
             "appData:searchform:jspsearchpage:lastName": self.search_query['last_name'],
             "appData:searchform:jspsearchpage:companyName": self.search_query['company_name'],
+            "appData:searchform:jspsearchpage:jspattributespage:selectCaseCode": self.search_query['case_code'],
+            "appData:searchform:jspsearchpage:jspattributespage:selectPartyCode": self.search_query['party_code'],
+            "appData:searchform:jspsearchpage:jspattributespage:selectStatusCode": self.search_query['status_code'],
+            "appData:searchform:jspsearchpage:jspattributespage:filedFromDate:j_id_id16pc4": self.search_query['from_date'],
+            "appData:searchform:jspsearchpage:jspattributespage:filedToDate:j_id_id19pc4": self.search_query['to_date'],
             "appData:searchform:jspsearchpage:submitSearch": ""
         }
 
