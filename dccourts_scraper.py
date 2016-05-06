@@ -1,7 +1,7 @@
 from __future__ import print_function
 from __future__ import division
 
-import requests, lxml.html, re, math, logging
+import requests, lxml.html, re, math, logging, unicodedata
 
 from data import case_codes, party_codes, status_codes
 
@@ -34,6 +34,9 @@ class DCCourtsScraper(object):
         allow us to grab the current JSF ViewState.
         """
         self.session = requests.Session()
+        self.session.headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.75 Safari/537.36"
+        }
         self.response = self.session.get(self.url) # initialize cookies
         self.doc = self._make_doc(self.response)
         self.viewstate = self._get_viewstate()
@@ -50,7 +53,8 @@ class DCCourtsScraper(object):
     # --------------------------------------------------------------------------------------- ##
 
     def _make_doc(self, response):
-        return lxml.html.fromstring(response.content)
+        return lxml.html.fromstring(response.content.decode(response.encoding, 'replace').encode('utf-8', 'xmlcharrefreplace'))
+        # response.content.decode('latin-1')
 
     def _get_viewstate(self):
         return self.doc.cssselect("#javax\.faces\.ViewState")[0].get('value')
@@ -89,12 +93,18 @@ class DCCourtsScraper(object):
 
     def get_search_metadata(self):
         return {
-            "num_results": self.num_results
+            "num_results": self.num_results,
+            "search_query": self.search_query,
+            "query_too_broad": self.query_too_broad
         }
 
     def get_search_data(self):
+
+        rows = []
+
         for i, row in enumerate(self.data):
-            row.append(self.current_page_number)
+            row['metadata'] = self.get_search_metadata()
+            rows.append(row)
             yield row
 
         estimated_num_pages = int(math.ceil(self.num_results / self.num_per_page))
@@ -105,15 +115,22 @@ class DCCourtsScraper(object):
             self._process_search(payload)
 
             for i, row in enumerate(self.data):
-                row.append(self.current_page_number)
+                row['metadata'] = self.get_search_metadata()
+                rows.append(row)
                 yield row
+
+        try:
+            assert(self.num_results == len(rows))
+        except AssertionError as e:
+            raise ScraperException("number of expected results %d did not match number of returned results %d" % (self.num_results, len(rows)))
 
     def _process_search(self, payload):
         self.post(payload)
         try:
-            self.num_results = self._get_num_results()
+            self.num_results, self.query_too_broad = self._get_num_results()
             self.data = self._get_rows()
         except Exception as e:
+            logging.exception("error")
             import pdb; pdb.set_trace()
 
     def _get_search_payload(self):
@@ -140,6 +157,10 @@ class DCCourtsScraper(object):
         }
 
     def _get_num_results(self):
+        """
+        return number_of_results, query_too_broad
+        """
+        query_too_broad = False
         text2parse = self.doc.cssselect("input[name=appData\:resultsform\:resultsPanelCollapsedState]")[0].getnext().text
 
         match1 = re.search(r"Search retrieved (\d+)", text2parse)
@@ -149,16 +170,24 @@ class DCCourtsScraper(object):
             match2 = re.search(r"Search limited to (\d+)", text2parse)
             if match2:
                 num_text = match2.groups()[0]
+                query_too_broad = True
                 logging.warning(t.red("search query %s is too broad, limitted to %s search results" % (str(self.search_query), num_text)))
             else:
                 raise ScraperException("cannot find number of results for query %s" % (str(self.search_query)))
-        return int(num_text)
+        return int(num_text), query_too_broad
 
     def _get_rows(self):
+        """
+        skip first column in search results because its just a checkbox
+        """
+        header_row = self.doc.cssselect("#appData\:resultsform\:jspresultspage\:dt1 > thead")[0]
+        header = [unicodedata.normalize("NFKD", x.text_content().strip()) for x in header_row.cssselect("th:not(:first-child)")]
+        header = [x.lower().replace(" ", "_") for x in header]
+
         table_rows = self.doc.cssselect("#appData\:resultsform\:jspresultspage\:dt1\:tbody_element > tr")
         rows = []
         for table_row in table_rows:
-            rows.append([x.text_content() for x in table_row.cssselect("td:not(:first-child)")])
+            rows.append({header[i]:unicodedata.normalize("NFKD", x.text_content().strip()) for i,x in enumerate(table_row.cssselect("td:not(:first-child)"))})
         return rows
 
     # Details
