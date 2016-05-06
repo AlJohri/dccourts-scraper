@@ -1,3 +1,3 @@
-permutation ('a', 'g', 'u') is too broad. > 500 results
-permutation ('a', 'o', 'l') is too broad. > 500 results
-permutation ('a', 'q', 'u') is too broad. > 500 results
+query ('a', 'g', 'u') is too broad. > 500 results
+query ('a', 'o', 'l') is too broad. > 500 results
+query ('a', 'q', 'u') is too broad. > 500 results
