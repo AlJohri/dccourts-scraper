@@ -9,7 +9,7 @@ file_handler.setLevel(logging.DEBUG)
 errorfile_handler = logging.FileHandler("errors.log", mode='w')
 errorfile_handler.setLevel(logging.WARN)
 logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s %(message)s',
+                    format='%(levelname)s %(asctime)s %(message)s',
                     handlers=[logging.StreamHandler(),
                               file_handler,
                               errorfile_handler])
@@ -26,6 +26,20 @@ from blessings import Terminal
 t = Terminal()
 
 def main():
+
+    # TODO: ScraperException should have subtypes
+    # TODO: should warnings go into history log as well
+    # TODO: ensure sum of num_results in history log corresponds with number of cases in database
+    # TODO: be able to run a single search query at once
+    # TODO: if search query is too broad, either return error or internally handle using smaller
+    #       subqueries
+    # TODO: use db to check if a query is completely done and prevent doing it again!! (important)
+    # TODO: time how long each initial search query takes, how long getting the whole query (multiple pages takes),
+    #       and how long the whole process takes
+    # TODO: set up process to rerun the entire scrape on a weekly basis without deleting any data or running into any issues
+    #       this may require two modes - "update" which ignores if things are already done, and "continue" ?
+    # TODO: the history colletion should not really be history but rather status of each query. cache whether the query was too
+    #       broad so the broad query can be done first the next time
 
     alphabet = list(string.ascii_lowercase)
     scraper = DCCourtsScraper()
@@ -48,6 +62,10 @@ def main():
             logging.error(t.red("scraper encountered an error for query %s: %s" % (search_query_str, str(e))))
             db.history.insert({"_id": datetime.datetime.now(), "status": "error", "search_query": scraper.search_query, "error": str(e)})
             continue
+
+        # perhaps just throw an error for this, catch it in the scraper and do a more refined query
+        if scraper.query_too_broad:
+            logging.warning(t.red("search query %s is too broad, limitted to %s search results" % (search_query_str, num_text)))
 
         # get expected number of results
         metadata = scraper.get_search_metadata()

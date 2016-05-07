@@ -171,7 +171,6 @@ class DCCourtsScraper(object):
             if match2:
                 num_text = match2.groups()[0]
                 query_too_broad = True
-                logging.warning(t.red("search query %s is too broad, limitted to %s search results" % (str(self.search_query), num_text)))
             else:
                 raise ScraperException("cannot find number of results for query %s" % (str(self.search_query)))
         return int(num_text), query_too_broad
