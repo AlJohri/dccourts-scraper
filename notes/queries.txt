@@ -1,0 +1,10 @@
+db.history.aggregate({"$group": { "_id": 0, "count": { "$sum": "$num_results"}}})
+db.cases.count()
+
+db.history.find({"query_too_broad": true}).count()
+
+db.history.distinct("status")
+db.history.find({"status": "success"}).count()
+db.history.find({"status": "error"}).count()
+
+db.history.find({"error": "No data found for the specified search criteria"}).count()
