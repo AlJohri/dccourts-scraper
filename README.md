@@ -1,6 +1,8 @@
 # DCCourts Scraper
 
-Scrape [DCCourts](https://www.dccourts.gov/cco/maincase.jsf). WIP.
+*Obsolete. The old version of the website is gone: https://www.dccourts.gov/cco/maincase.jsf*
+
+Scrape [DCCourts](https://www.dccourts.gov/cco/maincase.jsf).
 
 ![](./assets/screenshot.png)
 
